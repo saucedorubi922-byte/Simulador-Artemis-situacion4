@@ -1,118 +1,127 @@
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+
 #include "simulador.h"
 #include "validaciones.h"
 
-/* Muestra las opciones disponibles */
-void mostrarMenu(void) {
-    printf("\n=================================\n");
-    printf("       SIMULADOR DE FISICA\n");
-    printf("=================================\n");
-    printf("1. Cargar valores originales\n");
-    printf("2. Resolver inciso A\n");
-    printf("3. Resolver inciso B\n");
-    printf("4. Resolver inciso C\n");
-    printf("5. Resolver inciso D\n");
-    printf("6. Mostrar resultados\n");
-    printf("7. Simulacion interactiva\n");
-    printf("8. Ver historial\n");
+static void mostrarMenu(void) {
+    printf("\n========== SIMULADOR ARTEMIS - SITUACION 4 ==========\n");
+    printf("1. Cargar valores originales del enunciado\n");
+    printf("2. Ingresar parametros personalizados\n");
+    printf("3. Calcular inciso A - Trabajo del rozamiento\n");
+    printf("4. Calcular inciso B - Desaceleracion media\n");
+    printf("5. Calcular inciso C - Fuerza promedio del agua\n");
+    printf("6. Analizar inciso D - Angulo gamma\n");
+    printf("7. Calcular todo y mostrar reporte final\n");
+    printf("8. Ejecutar simulacion interactiva por eventos\n");
+    printf("9. Mostrar parametros actuales\n");
+    printf("10. Mostrar historial de operaciones\n");
     printf("0. Salir\n");
-    printf("=================================\n");
-    printf("Seleccione una opcion: ");
-}
-
-/* Lee una opcion numerica de forma segura */
-int leerOpcion(void) {
-    char entrada[100];
-    char *fin;
-    long opcion;
-
-    if (fgets(entrada, sizeof(entrada), stdin) == NULL) {
-        return 0;
-    }
-
-    opcion = strtol(entrada, &fin, 10);
-
-    if (fin == entrada) {
-        return -1;
-    }
-
-    while (*fin == ' ' || *fin == '\t') {
-        fin++;
-    }
-
-    if (*fin != '\n' && *fin != '\0') {
-        return -1;
-    }
-
-    if (opcion < 0 || opcion > 8) {
-        return -1;
-    }
-
-    return (int)opcion;
+    printf("=====================================================\n");
 }
 
 int main(void) {
+    Capsula capsula;
+    Resultados resultados = {0};
+    Evento eventos[MAX_EVENTOS];
+    int cantidadEventos = 0;
     int opcion;
+    char mensaje[180];
 
-    printf("Bienvenido al Simulador de Fisica\n");
+    cargarValoresOriginales(&capsula);
+    (void)agregarEvento(eventos, &cantidadEventos,
+                        "Se cargaron los valores originales del escenario.");
 
     do {
         mostrarMenu();
-        opcion = leerOpcion();
+
+        if (!leerEnteroRango("Selecciona una opcion: ", 0, 10, &opcion)) {
+            break;
+        }
 
         switch (opcion) {
             case 1:
-                printf("\nCargar valores originales\n");
-                /* Conectar funcion de simulador.c */
+                cargarValoresOriginales(&capsula);
+                memset(&resultados, 0, sizeof(resultados));
+                (void)agregarEvento(eventos, &cantidadEventos,
+                                    "Se restauraron los valores originales.");
+                printf("\nValores originales cargados correctamente.\n");
+                printf("Gamma inicia en 6,25 grados como valor de ejemplo.\n");
                 break;
 
             case 2:
-                printf("\nResolviendo inciso A...\n");
-                /* Conectar funcion del inciso A */
+                if (ingresarParametrosPersonalizados(&capsula)) {
+                    memset(&resultados, 0, sizeof(resultados));
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se ingresaron parametros personalizados.");
+                } else {
+                    printf("No se modificaron los parametros actuales.\n");
+                }
                 break;
 
             case 3:
-                printf("\nResolviendo inciso B...\n");
-                /* Conectar funcion del inciso B */
-                break;
-
             case 4:
-                printf("\nResolviendo inciso C...\n");
-                /* Conectar funcion del inciso C */
-                break;
-
             case 5:
-                printf("\nResolviendo inciso D...\n");
-                /* Conectar funcion del inciso D */
-                break;
-
             case 6:
-                printf("\nMostrando resultados...\n");
-                /* Conectar funcion de reportes */
-                break;
-
             case 7:
-                printf("\nSimulacion interactiva...\n");
-                /* Conectar funcion de simulacion */
+            case 8:
+                if (!validarCapsula(&capsula, mensaje, sizeof(mensaje))) {
+                    printf("No se puede continuar: %s\n", mensaje);
+                    break;
+                }
+
+                if (opcion == 3) {
+                    calcularIncisoA(&capsula, &resultados);
+                    mostrarIncisoA(&capsula, &resultados);
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se calculo el inciso A.");
+                } else if (opcion == 4) {
+                    calcularIncisoB(&capsula, &resultados);
+                    mostrarIncisoB(&capsula, &resultados);
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se calculo el inciso B.");
+                } else if (opcion == 5) {
+                    calcularIncisoC(&capsula, &resultados);
+                    mostrarIncisoC(&capsula, &resultados);
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se calculo el inciso C.");
+                } else if (opcion == 6) {
+                    analizarGamma(&capsula, &resultados);
+                    mostrarIncisoD(&capsula, &resultados);
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se analizo el inciso D.");
+                } else if (opcion == 7) {
+                    calcularTodo(&capsula, &resultados);
+                    mostrarReporte(&capsula, &resultados);
+                    (void)agregarEvento(eventos, &cantidadEventos,
+                                        "Se calcularon todos los incisos y se genero el reporte.");
+                } else {
+                    if (simularDescenso(&capsula)) {
+                        (void)agregarEvento(eventos, &cantidadEventos,
+                                            "Se ejecuto la simulacion interactiva por eventos.");
+                    }
+                }
                 break;
 
-            case 8:
-                printf("\nHistorial de operaciones...\n");
-                /* Conectar funcion de historial */
+            case 9:
+                mostrarParametros(&capsula);
+                break;
+
+            case 10:
+                mostrarHistorial(eventos, cantidadEventos);
                 break;
 
             case 0:
-                printf("\nGracias por utilizar el simulador.\n");
-                break;
-
-            default:
-                printf("\nOpcion invalida. Intente nuevamente.\n");
+                printf("\nFinalizando simulador. Hasta luego.\n");
                 break;
         }
 
+        if (opcion != 0) {
+            pausarConsola();
+        }
     } while (opcion != 0);
 
     return 0;
 }
+
